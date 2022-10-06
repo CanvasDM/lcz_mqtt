@@ -1,0 +1,70 @@
+#
+# Copyright (c) 2022 Laird Connectivity LLC
+#
+# SPDX-License-Identifier: LicenseRef-LairdConnectivity-Clause
+#
+menuconfig LCZ_MQTT_BLE
+	bool "Enable MQTT BLE Laird Connectivity Sensor Data Advertisement Handler"
+	depends on LCZ_LWM2M_GATEWAY_OBJ
+	depends on !LCZ_LWM2M_UTIL_MANAGE_OBJ_INST
+	depends on LCZ_MQTT
+	depends on LCZ_BT_SCAN
+	depends on LCZ_AD_FIND
+	depends on LCZ_SENSOR_ADV_MATCH
+	depends on BT_EXT_ADV
+	select LCZ_SENSOR_EVENT
+
+if LCZ_MQTT_BLE
+
+module=LCZ_MQTT_BLE
+module-str=MQTT_BLE
+source "subsys/logging/Kconfig.template.log_config"
+
+config LCZ_MQTT_BLE_EVENT_LOG_VERBOSE
+	bool "Log event type, index, and RSSI at INF level"
+	depends on LCZ_MQTT_BLE_LOG_LEVEL >= LCZ_MQTT_BLE_LOG_LEVEL_INF
+
+config LCZ_MQTT_BLE_CREATE_LOG_VERBOSE
+	bool "Log attempted creation of blocked devices"
+	depends on LCZ_MQTT_BLE_LOG_LEVEL >= LCZ_MQTT_BLE_LOG_LEVEL_DBG
+
+config LCZ_MQTT_BLE_EVENT_TIMEOUT_SECONDS
+	int "Maximum time between events"
+	default 900
+	help
+	  If a new advertising event is not received in this amount of time, then
+	  the device instance may be removed from the gateway.
+
+config LCZ_MQTT_BLE_STATS
+	bool "Increment statistics for use with debugger"
+
+config LCZ_MQTT_BLE_AD_LIST_SIZE
+	int "Size in bytes of Advertisement List"
+	range 65 4096
+	default 1072
+
+config LCZ_MQTT_BLE_PUBLISH_THRESHOLD
+	int "Publish immediately if list size is past this threshold"
+	range 1 4096
+	default 768
+
+config LCZ_MQTT_BLE_FIRST_PUBLISH
+	int
+	default 120
+	help
+	  Allow time for the gateway to initialize and connect to network
+
+config LCZ_MQTT_PUBLISH_RATE
+	int "Time in seconds between publishes of advertisement list"
+	default 600
+
+config LCZ_MQTT_BLE_LED
+	bool "Flash LED for sensor data"
+	depends on LCZ_LED
+	help
+	  The LED will flash after filtering advertisement data for sensors.
+	  A file "led_config.h" defining all LEDs needs to be defined elsewhere.
+	  In led_config.h BLE_LED index and BLE_ACTIVITY_LED_PATTERN need to
+	  be defined to work with lcz_led_blink(...).
+
+endif # LCZ_MQTT_BLE

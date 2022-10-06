@@ -1,0 +1,123 @@
+---
+info:
+  title: lcz_mqtt_attributes
+attributes:
+  - name: mqtt_user_name
+    summary: Client user name in connect request. Not used if empty.
+    required: true
+    schema:
+      maxLength: 127
+      type: string
+    x-ctype: string
+    x-default: ""
+    x-savable: true
+    x-writable: true
+  - name: mqtt_password
+    summary: Client password. Not used if empty.
+    required: true
+    schema:
+      maxLength: 127
+      type: string
+    x-ctype: string
+    x-default: ""
+    x-savable: true
+    x-writable: true
+  - name: mqtt_endpoint
+    summary: Server host name
+    required: true
+    schema:
+      maxLength: 127
+      type: string
+    x-ctype: string
+    x-default: ""
+    x-example: "a3tq8tk8zeye6t-ats.iot.us-east-1.amazonaws.com"
+    x-savable: true
+    x-writable: true
+  - name: mqtt_port
+    summary: Server host port
+    required: true
+    schema:
+      minLength: 3
+      maxLength: 4
+      type: string
+    x-ctype: string
+    x-default: "8883"
+    x-example: "443"
+    x-savable: true
+    x-writable: true
+  - name: mqtt_id
+    summary: Client ID used in MQTT connect. Base client ID if randomize is enabled.
+    required: true
+    schema:
+      maxLength: 127
+      type: string
+    x-ctype: string
+    x-default: ""
+    x-savable: true
+    x-writable: true
+  - name: mqtt_watchdog
+    summary: Maximum time in seconds between successful MQTT publishes.
+      Disabled when 0.
+    required: true
+    schema:
+      type: integer
+    x-ctype: uint32_t
+    x-default: 0
+    x-readable: true
+    x-writable: true
+    x-savable: true
+  - name: mqtt_publish_qos
+    summary: Quality of service
+    required: true
+    schema:
+      type: integer
+    x-ctype: uint8_t
+    x-default: 1
+    x-readable: true
+    x-writable: true
+    x-savable: true
+  - name: mqtt_peer_verify
+    summary: Verify server
+    required: true
+    schema:
+      type: integer
+      enum:
+        NONE: 0
+        OPTIONAL: 1
+        REQUIRED: 2
+        UNSET: 3
+    x-ctype: uint8_t
+    x-default: 2
+    x-readable: true
+    x-writable: true
+    x-savable: true
+  - name: mqtt_subscribe_qos
+    summary: Subscription quality of service
+    required: true
+    schema:
+      type: integer
+    x-ctype: uint8_t
+    x-default: 1
+    x-readable: true
+    x-writable: true
+    x-savable: true
+  - name: mqtt_use_credentials
+    summary: Load credentials (once) before trying to connect.
+    required: true
+    schema:
+      type: integer
+    x-ctype: bool
+    x-default: 1
+    x-savable: true
+    x-writable: true
+    x-readable: true
+  - name: mqtt_connect_on_request
+    summary: Try to load certs, resolve server, and connect when pub/sub is requested
+    required: true
+    schema:
+      type: integer
+    x-ctype: bool
+    x-default: 1
+    x-savable: true
+    x-writable: true
+    x-readable: true

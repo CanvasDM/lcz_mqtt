@@ -1,0 +1,24 @@
+---
+info:
+  title: lcz_mqtt_id_random
+attributes:
+  - name: mqtt_id_randomize
+    summary: Add suffix with random number to client ID on each connection.
+    required: true
+    schema:
+      type: integer
+    x-ctype: bool
+    x-default: 0
+    x-savable: true
+    x-writable: true
+    x-readable: true
+  - name: mqtt_id_random
+    summary: Current client ID
+    required: false
+    schema:
+      maxLength: 145
+      type: string
+    x-ctype: string
+    x-default: ""
+    x-readable: true
+

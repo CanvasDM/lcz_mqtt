@@ -1,0 +1,74 @@
+# Copyright (c) 2020-2022 Laird Connectivity
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig LCZ_MQTT
+    bool "Config LCZ_MQTT Module"
+    depends on MQTT_LIB
+    depends on MQTT_LIB_TLS
+    depends on LCZ_PKI_AUTH
+    depends on ATTR
+    depends on LCZ_DNS
+    depends on LCZ_SOFTWARE_RESET
+    select ERRNO_STR
+    select LCZ_SNPRINTK
+
+if LCZ_MQTT
+
+module=LCZ_MQTT
+module-dep=LOG
+module-str=LCZ_MQTT
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+config LCZ_MQTT_RX_THREAD_SIZE
+    int "Size of RX thread in bytes"
+    default 1024
+
+config LCZ_MQTT_STATS
+    bool "Enable statistics that can be viewed in debugger"
+
+config LCZ_MQTT_RX_BUFFER_SIZE
+    int "Size of buffer for MQTT rx path"
+    default 128
+
+config LCZ_MQTT_TX_BUFFER_SIZE
+    int "Size of buffer for MQTT tx path"
+    default 128
+
+config LCZ_MQTT_SUBSCRIPTIONS
+    bool "Enable subscriptions"
+
+if LCZ_MQTT_SUBSCRIPTIONS
+
+config LCZ_MQTT_SHADOW_IN_MAX_SIZE
+    int "Maximum size of subscription/shadow that can be processed"
+    default 128
+    help
+        AWS timestamps can make the shadow large
+
+config LCZ_MQTT_SHADOW_TOPIC_MAX_SIZE
+    int "Maximum size of topic"
+    default 128
+
+config LCZ_MQTT_LOG_MQTT_SUBSCRIPTION
+    bool "Enable/Disable printing of received MQTT data"
+
+config LCZ_MQTT_LOG_MQTT_SUBSCRIPTION_TOPIC
+    bool "Enable/Disable printing of received MQTT topic"
+
+endif # SUBSCRIPTIONS
+
+config LCZ_MQTT_LOG_MQTT_PUBLISH
+    bool "Print data published to LCZ_MQTT"
+
+config LCZ_MQTT_LOG_MQTT_PUBLISH_TOPIC
+    bool "Print the topic that docs are published"
+
+config LCZ_MQTT_KEEP_ALIVE_VERBOSE
+    bool "Log status for keep alive"
+    depends on LCZ_MQTT_LOG_LEVEL >= LCZ_MQTT_LOG_LEVEL_INF
+
+config LCZ_MQTT_CERT_TAG
+    int "mbedTLS tag for CA, device cert, and private key"
+    default 74
+
+endif # LCZ_MQTT
