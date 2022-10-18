@@ -70,4 +70,11 @@ config LCZ_MQTT_CERT_TAG
     int "mbedTLS tag for CA, device cert, and private key"
     default 74
 
+config LCZ_MQTT_AZURE
+    bool "Increase MBEDTLS MPI size for communication with Azure"
+    help
+      Include nrf-config-user settings for MQTT and Azure.
+      If other options are required, then a new file must be created
+      at the application level.
+
 endif # LCZ_MQTT
