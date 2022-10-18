@@ -197,15 +197,20 @@ static void ad_handler(const bt_addr_le_t *addr, int8_t rssi, uint8_t type,
 	 * Here it is used to prevent processing of ads and to reload certs.
 	 */
 	if (!attr_get_bool(ATTR_ID_mqtt_ble_enable)) {
-		mb.restart = true;
+		if (!mb.restart) {
+			/* Disconnect and connect in system workq thread instead of callback */
+			reschedule_publish(K_NO_WAIT);
+			lcz_mqtt_unload_credentials();
+			mb.restart = true;
+		}
 		return;
 	}
 
 	if (mb.restart) {
 		if (k_sem_take(&mb.ad_list.sem, K_NO_WAIT) == 0) {
 			flush_ad_list();
-			lcz_mqtt_load_credentials();
 			k_sem_give(&mb.ad_list.sem);
+			reschedule_publish(K_SECONDS(CONFIG_LCZ_MQTT_PUBLISH_RATE));
 			mb.restart = false;
 		}
 	}
@@ -476,6 +481,7 @@ static void publish_list(struct k_work *work)
 	__ASSERT(p != &mb, LOG_ERR("Invalid pointer"));
 
 	if (!attr_get_bool(ATTR_ID_mqtt_ble_enable)) {
+		lcz_mqtt_disconnect();
 		return;
 	}
 
@@ -581,10 +587,10 @@ static const char *get_name(int idx)
 
 static void mqtt_ack_callback(int status)
 {
-	if (status < 0) {
+	if (status < 0 && attr_get_bool(ATTR_ID_mqtt_ble_enable)) {
 		LOG_ERR("MQTT Publish (ack) error: %d", status);
 	} else {
-		LOG_INF("MQTT Ack id: %u", status);
+		LOG_INF("MQTT Ack id: %d", status);
 	}
 
 	flush_ad_list();

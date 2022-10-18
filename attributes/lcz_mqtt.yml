@@ -42,17 +42,20 @@ attributes:
       type: string
     x-ctype: string
     x-default: "8883"
-    x-example: "443"
+    x-example: "1883"
+    x-readable: true
     x-savable: true
     x-writable: true
   - name: mqtt_id
-    summary: Client ID used in MQTT connect. Base client ID if randomize is enabled.
+    summary: Client ID used in MQTT connect.
+      Server may limit this to 23 alpha-numeric characters.
     required: true
     schema:
       maxLength: 127
       type: string
     x-ctype: string
     x-default: ""
+    x-readable: true
     x-savable: true
     x-writable: true
   - name: mqtt_watchdog
@@ -101,8 +104,8 @@ attributes:
     x-readable: true
     x-writable: true
     x-savable: true
-  - name: mqtt_use_credentials
-    summary: Load credentials (once) before trying to connect.
+  - name: mqtt_connect_on_request
+    summary: Try to load certs, resolve server, and connect when pub/sub is requested
     required: true
     schema:
       type: integer
@@ -111,8 +114,28 @@ attributes:
     x-savable: true
     x-writable: true
     x-readable: true
-  - name: mqtt_connect_on_request
-    summary: Try to load certs, resolve server, and connect when pub/sub is requested
+  - name: mqtt_transport_secure
+    summary: If possible (CONFIG_MQTT_LIB_TLS defined), use TLS for transport
+    required: true
+    schema:
+      type: integer
+    x-ctype: bool
+    x-default: 1
+    x-savable: true
+    x-writable: true
+    x-readable: true
+  - name: mqtt_root_only
+    summary: Only load root certificate
+    required: true
+    schema:
+      type: integer
+    x-ctype: bool
+    x-default: 0
+    x-savable: true
+    x-writable: true
+    x-readable: true
+  - name: mqtt_clean_session
+    summary: If false, then allow persistent sessions. Not supported by all brokers.
     required: true
     schema:
       type: integer

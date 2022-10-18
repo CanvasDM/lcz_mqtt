@@ -78,7 +78,9 @@ static int nfds;
 
 static struct addrinfo *saddr;
 
+#if defined(CONFIG_MQTT_LIB_TLS)
 static sec_tag_t mqtt_security_tags[] = { CONFIG_LCZ_MQTT_CERT_TAG };
+#endif
 
 static struct k_work_delayable publish_watchdog;
 static struct k_work_delayable keep_alive;
@@ -123,7 +125,7 @@ static void wait(int timeout);
 static void mqtt_evt_handler(struct mqtt_client *const client, const struct mqtt_evt *evt);
 static int subscription_handler(struct mqtt_client *const client, const struct mqtt_evt *evt);
 static void subscription_flush(struct mqtt_client *const client, size_t length);
-static int publish(struct mqtt_client *client, enum mqtt_qos qos, const char *data, uint32_t len,
+static int publish(struct mqtt_client *client, enum mqtt_qos qos, const uint8_t *data, uint32_t len,
 		   const uint8_t *topic, bool binary, struct lcz_mqtt_user *user);
 static void client_init(struct mqtt_client *client);
 static int try_to_connect(struct mqtt_client *client);
@@ -228,35 +230,47 @@ int lcz_mqtt_disconnect(void)
 
 int lcz_mqtt_load_credentials(void)
 {
-	int r = -EPERM;
+	int r = -ENOTSUP;
 
-	if (attr_get_bool(ATTR_ID_mqtt_use_credentials)) {
+	if (IS_ENABLED(CONFIG_MQTT_LIB_TLS)) {
 		r = lcz_pki_auth_tls_credential_load(LCZ_PKI_AUTH_STORE_TELEMETRY,
-						     CONFIG_LCZ_MQTT_CERT_TAG);
-		if (r == 0) {
-			lcz_mqtt.certs_loaded = true;
-		} else {
-			lcz_mqtt.certs_loaded = false;
-		}
+						     CONFIG_LCZ_MQTT_CERT_TAG,
+						     attr_get_bool(ATTR_ID_mqtt_root_only));
 	}
 
+	if (r == 0) {
+		lcz_mqtt.certs_loaded = true;
+	} else {
+		lcz_mqtt.certs_loaded = false;
+	}
 	LOG_DBG("credential load: %d", r);
 
 	return r;
 }
 
-int lcz_mqtt_send_string(const char *data, const uint8_t *topic, struct lcz_mqtt_user *user)
+int lcz_mqtt_unload_credentials(void)
+{
+	int r;
+
+	r = lcz_pki_auth_tls_credential_unload(LCZ_PKI_AUTH_STORE_TELEMETRY,
+					       CONFIG_LCZ_MQTT_CERT_TAG);
+	lcz_mqtt.certs_loaded = false;
+
+	return r;
+}
+
+int lcz_mqtt_send_string(const uint8_t *data, const uint8_t *topic, struct lcz_mqtt_user *user)
 {
 	return lcz_mqtt_send_data(false, data, 0, topic, user);
 }
 
-int lcz_mqtt_send_binary(const char *data, uint32_t len, const uint8_t *topic,
+int lcz_mqtt_send_binary(const uint8_t *data, uint32_t len, const uint8_t *topic,
 			 struct lcz_mqtt_user *user)
 {
 	return lcz_mqtt_send_data(true, data, len, topic, user);
 }
 
-int lcz_mqtt_send_data(bool binary, const char *data, uint32_t len, const uint8_t *topic,
+int lcz_mqtt_send_data(bool binary, const uint8_t *data, uint32_t len, const uint8_t *topic,
 		       struct lcz_mqtt_user *user)
 {
 	int r = -ENOTCONN;
@@ -273,15 +287,14 @@ int lcz_mqtt_send_data(bool binary, const char *data, uint32_t len, const uint8_
 		length = strlen(data);
 	}
 
-	INCR_STAT(sends);
-	ADD_STAT(tx_payload_bytes, length);
-
 	r = publish(&mqtt_client_ctx, attr_get_uint32(ATTR_ID_mqtt_publish_qos, 0), data, length,
 		    topic, binary, user);
 
+	INCR_STAT(sends);
 	if (r == 0) {
 		INCR_STAT(success);
 		RESET_STAT(consecutive_fails);
+		ADD_STAT(tx_payload_bytes, length);
 		lcz_mqtt_restart_publish_watchdog();
 	} else {
 		INCR_STAT(failure);
@@ -312,16 +325,16 @@ int lcz_mqtt_subscribe(const uint8_t *topic, uint8_t subscribe)
 		return r;
 	}
 
-	mt.topic.utf8 = topic;
-	mt.topic.size = strlen(mt.topic.utf8);
+	mt.topic.utf8 = (uint8_t *)topic;
+	mt.topic.size = strlen((char *)topic);
 	mt.qos = attr_get_uint32(ATTR_ID_mqtt_subscribe_qos, 0);
 	__ASSERT(mt.topic.size != 0, "Invalid topic");
 	r = subscribe ? mqtt_subscribe(&mqtt_client_ctx, &list) :
 			      mqtt_unsubscribe(&mqtt_client_ctx, &list);
 	if (r != 0) {
-		LOG_ERR("%s status %d to %s", str, r, (char *)mt.topic.utf8);
+		LOG_ERR("%s status %d to %s", str, r, (char *)topic);
 	} else {
-		LOG_INF("%s to %s", str, (char *)mt.topic.utf8);
+		LOG_INF("%s to %s", str, (char *)topic);
 	}
 	return r;
 }
@@ -368,7 +381,7 @@ int lcz_mqtt_shadow_format_and_send(struct lcz_mqtt_user *user, const char *topi
 		actual_size = vsnprintk(msg, req_size, fmt, ap);
 
 		if (actual_size > 0 && actual_size < req_size) {
-			r = lcz_mqtt_send_string(msg, topic, user);
+			r = lcz_mqtt_send_string((uint8_t*)msg, (uint8_t*)topic, user);
 		} else {
 			LOG_ERR("Unable to format (and send) MQTT message");
 			r = -EINVAL;
@@ -430,7 +443,15 @@ int attr_prepare_mqtt_watchdog_remaining(void)
 /**************************************************************************************************/
 static void prepare_fds(struct mqtt_client *client)
 {
-	fds[0].fd = client->transport.tls.sock;
+	if (client->transport.type == MQTT_TRANSPORT_NON_SECURE) {
+		fds[0].fd = client->transport.tcp.sock;
+	}
+#if defined(CONFIG_MQTT_LIB_TLS)
+	else if (client->transport.type == MQTT_TRANSPORT_SECURE) {
+		fds[0].fd = client->transport.tls.sock;
+	}
+#endif
+
 	fds[0].events = ZSOCK_POLLIN;
 	nfds = 1;
 }
@@ -602,15 +623,15 @@ static void subscription_flush(struct mqtt_client *const client, size_t length)
 	}
 }
 
-static int publish(struct mqtt_client *client, enum mqtt_qos qos, const char *data, uint32_t len,
+static int publish(struct mqtt_client *client, enum mqtt_qos qos, const uint8_t *data, uint32_t len,
 		   const uint8_t *topic, bool binary, struct lcz_mqtt_user *user)
 {
 	struct mqtt_publish_param param;
 
 	memset(&param, 0, sizeof(struct mqtt_publish_param));
 	param.message.topic.qos = qos;
-	param.message.topic.topic.utf8 = topic;
-	param.message.topic.topic.size = strlen(param.message.topic.topic.utf8);
+	param.message.topic.topic.utf8 = (uint8_t *)topic;
+	param.message.topic.topic.size = strlen((char *)topic);
 	param.message.payload.data = (uint8_t *)data;
 	param.message.payload.len = len;
 	param.message_id = rand16_nonzero_get();
@@ -618,8 +639,7 @@ static int publish(struct mqtt_client *client, enum mqtt_qos qos, const char *da
 	param.retain_flag = 0U;
 
 	if (IS_ENABLED(CONFIG_LCZ_MQTT_LOG_MQTT_PUBLISH_TOPIC)) {
-		log_json("Publish Topic", param.message.topic.topic.size,
-			 (char *)param.message.topic.topic.utf8);
+		log_json("Publish Topic", param.message.topic.topic.size, topic);
 	}
 
 	if (!binary && IS_ENABLED(CONFIG_LCZ_MQTT_LOG_MQTT_PUBLISH)) {
@@ -650,22 +670,22 @@ static void client_init(struct mqtt_client *client)
 {
 	const char *s;
 
-	mqtt_client_init(client);
-
 	broker_init();
 
 	/* MQTT client configuration */
+	mqtt_client_init(client);
 	client->broker = &mqtt_broker;
 	client->evt_cb = mqtt_evt_handler;
 	client->client_id.utf8 = lcz_mqtt_get_mqtt_client_id();
-	client->client_id.size = strlen(client->client_id.utf8);
+	client->client_id.size = strlen((char *)client->client_id.utf8);
 	client->user_name = NULL;
 	client->password = NULL;
+	client->clean_session = attr_get_bool(ATTR_ID_mqtt_clean_session) ? 1 : 0;
 
 	/* If name isn't empty, then use it */
 	s = attr_get_quasi_static(ATTR_ID_mqtt_user_name);
 	if (strlen(s) > 0) {
-		lcz_mqtt.user_name.utf8 = s;
+		lcz_mqtt.user_name.utf8 = (uint8_t *)s;
 		lcz_mqtt.user_name.size = strlen(s);
 		client->user_name = &lcz_mqtt.user_name;
 	}
@@ -673,7 +693,7 @@ static void client_init(struct mqtt_client *client)
 	/* If client password isn't empty, then use it */
 	s = attr_get_quasi_static(ATTR_ID_mqtt_password);
 	if (strlen(s) > 0) {
-		lcz_mqtt.password.utf8 = s;
+		lcz_mqtt.password.utf8 = (uint8_t *)s;
 		lcz_mqtt.password.size = strlen(s);
 		client->password = &lcz_mqtt.password;
 	}
@@ -685,14 +705,24 @@ static void client_init(struct mqtt_client *client)
 	client->tx_buf_size = sizeof(mqtt_tx_buffer);
 
 	/* MQTT transport configuration */
-	client->transport.type = MQTT_TRANSPORT_SECURE;
-	struct mqtt_sec_config *tls_config = &client->transport.tls.config;
-	tls_config->peer_verify =
-		attr_get_signed32(ATTR_ID_mqtt_peer_verify, MBEDTLS_SSL_VERIFY_NONE);
-	tls_config->cipher_list = NULL;
-	tls_config->sec_tag_list = mqtt_security_tags;
-	tls_config->sec_tag_count = ARRAY_SIZE(mqtt_security_tags);
-	tls_config->hostname = attr_get_quasi_static(ATTR_ID_mqtt_endpoint);
+	client->transport.type = MQTT_TRANSPORT_NON_SECURE;
+	if (attr_get_bool(ATTR_ID_mqtt_transport_secure)) {
+#if defined(CONFIG_MQTT_LIB_TLS)
+		client->transport.type = MQTT_TRANSPORT_SECURE;
+
+		struct mqtt_sec_config *tls_config = &client->transport.tls.config;
+		tls_config->peer_verify =
+			attr_get_uint32(ATTR_ID_mqtt_peer_verify, MBEDTLS_SSL_VERIFY_NONE);
+		tls_config->cipher_count = 0;
+		tls_config->cipher_list = NULL;
+		tls_config->sec_tag_list = mqtt_security_tags;
+		tls_config->sec_tag_count = ARRAY_SIZE(mqtt_security_tags);
+		tls_config->session_cache = TLS_SESSION_CACHE_DISABLED;
+		tls_config->hostname = attr_get_quasi_static(ATTR_ID_mqtt_endpoint);
+#else
+		LOG_WRN("MQTT LIB TLS not enabled - using non-secure");
+#endif
+	}
 }
 
 /* In this routine we block until the connected variable is 1 */
@@ -706,7 +736,7 @@ static int try_to_connect(struct mqtt_client *client)
 
 	client_init(client);
 	LOG_INF("Attempting to connect %s to MQTT Broker %s", (char *)client->client_id.utf8,
-		(char *)client->transport.tls.config.hostname);
+		(char *)attr_get_quasi_static(ATTR_ID_mqtt_endpoint));
 	r = mqtt_connect(client);
 	if (r != 0) {
 		LOG_ERR("mqtt_connect: %d", r);
@@ -970,10 +1000,12 @@ static int connect_on_request(void)
 			break;
 		}
 
-		if (!lcz_mqtt.certs_loaded) {
-			r = lcz_mqtt_load_credentials();
-			if (r < 0) {
-				break;
+		if (attr_get_bool(ATTR_ID_mqtt_transport_secure)) {
+			if (!lcz_mqtt.certs_loaded) {
+				r = lcz_mqtt_load_credentials();
+				if (r < 0) {
+					break;
+				}
 			}
 		}
 

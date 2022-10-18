@@ -4,7 +4,6 @@
 menuconfig LCZ_MQTT
     bool "Config LCZ_MQTT Module"
     depends on MQTT_LIB
-    depends on MQTT_LIB_TLS
     depends on LCZ_PKI_AUTH
     depends on ATTR
     depends on LCZ_DNS

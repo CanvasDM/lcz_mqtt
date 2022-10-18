@@ -79,9 +79,18 @@ int lcz_mqtt_disconnect(void);
 /**
  * @brief Load credentials
  *
+ * @note ATTR_ID_mqtt_root_only controls if only root credential is loaded.
+ *
  * @return int 0 on success, else negative errno
  */
 int lcz_mqtt_load_credentials(void);
+
+/**
+ * @brief Delete credentials
+ *
+ * @return int 0 on success, else negative errno
+ */
+int lcz_mqtt_unload_credentials(void);
 
 /**
  * @brief Send data using MQTT
@@ -93,14 +102,14 @@ int lcz_mqtt_load_credentials(void);
  * @param user registered user, NULL if callback isn't desired.
  * @return int 0 on success, negative errno otherwise
  */
-int lcz_mqtt_send_data(bool binary, const char *data, uint32_t len, const uint8_t *topic,
+int lcz_mqtt_send_data(bool binary, const uint8_t *data, uint32_t len, const uint8_t *topic,
 		       struct lcz_mqtt_user *user);
 
 /**
  * @brief Helper versions of lcz_mqtt_send_data
  */
-int lcz_mqtt_send_string(const char *data, const uint8_t *topic, struct lcz_mqtt_user *user);
-int lcz_mqtt_send_binary(const char *data, uint32_t len, const uint8_t *topic,
+int lcz_mqtt_send_string(const uint8_t *data, const uint8_t *topic, struct lcz_mqtt_user *user);
+int lcz_mqtt_send_binary(const uint8_t *data, uint32_t len, const uint8_t *topic,
 			 struct lcz_mqtt_user *user);
 
 /**
