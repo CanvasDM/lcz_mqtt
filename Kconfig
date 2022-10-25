@@ -2,5 +2,4 @@
 # SPDX-License-Identifier: Apache-2.0
 
 rsource "Kconfig.lcz_mqtt"
-rsource "Kconfig.lcz_mqtt_ble"
 rsource "Kconfig.lcz_mqtt_shadow_parser"

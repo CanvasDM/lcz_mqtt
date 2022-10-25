@@ -5,10 +5,6 @@ zephyr_include_directories(include)
 
 zephyr_sources(source/lcz_mqtt.c)
 
-zephyr_sources_ifdef(CONFIG_LCZ_MQTT_BLE
-    source/lcz_mqtt_ble.c
-)
-
 zephyr_sources_ifdef(CONFIG_LCZ_MQTT_SHADOW_PARSER
     source/lcz_mqtt_shadow_parser.c
 )
