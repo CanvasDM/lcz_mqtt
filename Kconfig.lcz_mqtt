@@ -73,8 +73,7 @@ config LCZ_MQTT_CERT_TAG
 config LCZ_MQTT_AZURE
     bool "Increase MBEDTLS MPI size for communication with Azure"
     help
-      Include nrf-config-user settings for MQTT and Azure.
-      If other options are required, then a new file must be created
-      at the application level.
+      Makes lcz_mqtt_mbedtls_config.h available to be used by app layer nrf-config-user.h.
+      Requires nrf-config-user.h in the app to include lcz_mqtt_mbedtls_config.h
 
 endif # LCZ_MQTT

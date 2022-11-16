@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2022 Laird Connectivity
  *
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: LicenseRef-LairdConnectivity-Clause
  */
 #include <logging/log.h>
 LOG_MODULE_REGISTER(lcz_mqtt_shadow_parser, CONFIG_LCZ_MQTT_SHADOW_PARSER_LOG_LEVEL);

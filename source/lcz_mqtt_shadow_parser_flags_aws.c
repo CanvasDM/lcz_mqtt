@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2022 Laird Connectivity
  *
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: LicenseRef-LairdConnectivity-Clause
  */
 
 /**************************************************************************************************/
