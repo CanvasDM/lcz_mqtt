@@ -1031,11 +1031,11 @@ __weak const uint8_t *lcz_mqtt_get_mqtt_client_id(void)
 {
 	const uint8_t *result = attr_get_quasi_static(ATTR_ID_mqtt_id);
 
-#if defined(ATTR_ID_mqtt_randomize_client_id)
+#if defined(ATTR_ID_mqtt_id_randomize)
 	int r;
-	uint8_t buffer[ATTR_MQTT_CLIENT_ID_RANDOM_MAX_STR_SIZE];
+	uint8_t buffer[ATTR_MQTT_ID_RANDOM_MAX_STR_SIZE];
 
-	if (attr_get_bool(ATTR_ID_mqtt_randomize_client_id)) {
+	if (attr_get_bool(ATTR_ID_mqtt_id_randomize)) {
 		r = LCZ_SNPRINTK(buffer, "%s_%08x", result, sys_rand32_get());
 		if (r > 0) {
 			if (attr_set_string(ATTR_ID_mqtt_id_random, buffer, r) == 0) {
