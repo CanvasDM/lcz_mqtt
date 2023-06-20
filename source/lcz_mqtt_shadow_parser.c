@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: LicenseRef-LairdConnectivity-Clause
  */
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(lcz_mqtt_shadow_parser, CONFIG_LCZ_MQTT_SHADOW_PARSER_LOG_LEVEL);
 
 /**************************************************************************************************/
@@ -14,8 +14,8 @@ LOG_MODULE_REGISTER(lcz_mqtt_shadow_parser, CONFIG_LCZ_MQTT_SHADOW_PARSER_LOG_LE
 /**************************************************************************************************/
 #define JSMN_PARENT_LINKS
 #define JSMN_HEADER
-#include "jsmn.h"
-#include "jsmn_json.h"
+#include <jsmn.h>
+#include <jsmn_json.h>
 
 #include "lcz_mqtt_shadow_parser.h"
 

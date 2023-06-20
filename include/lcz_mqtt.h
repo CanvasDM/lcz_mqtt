@@ -12,9 +12,9 @@
 /**************************************************************************************************/
 /* Includes                                                                                       */
 /**************************************************************************************************/
-#include <net/mqtt.h>
+#include <zephyr/net/mqtt.h>
 #include <stdarg.h>
-#include <sys/slist.h>
+#include <zephyr/sys/slist.h>
 
 #ifdef __cplusplus
 extern "C" {

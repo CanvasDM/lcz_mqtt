@@ -8,27 +8,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(lcz_mqtt, CONFIG_LCZ_MQTT_LOG_LEVEL);
 
 /**************************************************************************************************/
 /* Includes                                                                                       */
 /**************************************************************************************************/
 #include <mbedtls/ssl.h>
-#include <net/socket.h>
+#include <zephyr/net/socket.h>
 #include <stdio.h>
-#include <kernel.h>
-#include <random/rand32.h>
-#include <init.h>
-#include <sys/printk.h>
+#include <zephyr/kernel.h>
+#include <zephyr/random/rand32.h>
+#include <zephyr/init.h>
+#include <zephyr/sys/printk.h>
 
-#include "lcz_dns.h"
-#include "lcz_snprintk.h"
-#include "lcz_software_reset.h"
-#include "lcz_pki_auth.h"
-#include "attr.h"
-#include "lcz_mqtt_shadow_parser.h"
-#include "errno_str.h"
+#include <lcz_dns.h>
+#include <lcz_snprintk.h>
+#include <lcz_software_reset.h>
+#include <lcz_pki_auth.h>
+#include <attr.h>
+#include <lcz_mqtt_shadow_parser.h>
+#include <errno_str.h>
 
 #include "lcz_mqtt.h"
 
