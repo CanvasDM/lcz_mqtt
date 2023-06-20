@@ -22,6 +22,7 @@ attributes:
     x-default: ""
     x-savable: true
     x-writable: true
+    x-obscure-in-show: true
   - name: mqtt_endpoint
     summary: Server host name
     required: true
