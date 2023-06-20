@@ -13,6 +13,10 @@ zephyr_sources_ifdef(CONFIG_LCZ_MQTT_SHADOW_PARSER_FLAGS_AWS
     source/lcz_mqtt_shadow_parser_flags_aws.c
 )
 
+zephyr_sources_ifdef(CONFIG_LCZ_MQTT_SHELL
+    source/lcz_mqtt_shell.c
+)
+
 if(CONFIG_LCZ_MQTT_AZURE)
 zephyr_include_directories(mbedtls_config)
 endif()

@@ -76,4 +76,16 @@ config LCZ_MQTT_AZURE
       Makes lcz_mqtt_mbedtls_config.h available to be used by app layer nrf-config-user.h.
       Requires nrf-config-user.h in the app to include lcz_mqtt_mbedtls_config.h
 
+config LCZ_MQTT_SHELL
+    bool "Enable MQTT shell commands"
+
+if LCZ_MQTT_SHELL
+    config LCZ_MQTT_SHELL_INIT_PRIORITY
+    int "Application init priority for the MQTT shell"
+    range 0 99
+    default APPLICATION_INIT_PRIORITY
+    help
+      Recommended to be higher than main thread init priority.
+endif
+
 endif # LCZ_MQTT
