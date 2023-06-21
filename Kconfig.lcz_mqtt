@@ -86,6 +86,11 @@ if LCZ_MQTT_SHELL
     default APPLICATION_INIT_PRIORITY
     help
       Recommended to be higher than main thread init priority.
-endif
+
+config LCZ_MQTT_SHELL_BUFFER_SIZE
+    int "TX/RX buffer size for MQTT shell"
+    default SHELL_CMD_BUFF_SIZE
+
+endif # LCZ_MQTT_SHELL
 
 endif # LCZ_MQTT

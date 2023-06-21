@@ -15,6 +15,8 @@ LOG_MODULE_REGISTER(lcz_mqtt_shell, CONFIG_LCZ_MQTT_LOG_LEVEL);
 /**************************************************************************************************/
 #include <zephyr/init.h>
 #include <zephyr/shell/shell.h>
+#include <zephyr/sys/base64.h>
+#include <attr.h>
 
 #include "lcz_mqtt.h"
 
@@ -34,6 +36,7 @@ struct mqtt_shell_context {
 /**************************************************************************************************/
 static struct mqtt_shell_context mqtt_ctx;
 static const struct shell *shell_cur;
+static uint8_t data_buffer[CONFIG_LCZ_MQTT_SHELL_BUFFER_SIZE];
 
 /**************************************************************************************************/
 /* Local Function Prototypes                                                                      */
@@ -87,13 +90,24 @@ static int cmd_mqtt_disconnect(const struct shell *shell, size_t argc, char **ar
 static int cmd_mqtt_send(const struct shell *shell, size_t argc, char **argv)
 {
 	int ret;
+	size_t decode_len;
+	const char *topic;
+
 	shell_cur = shell;
-	if (!mqtt_ctx.connected) {
-		ret = -ENOTCONN;
+
+	topic = attr_get_quasi_static(ATTR_ID_mqtt_shell_topic);
+	if (!topic || strlen(topic) <= 0) {
+		ret = -EINVAL;
 		goto err;
 	}
 
-	LOG_INF("TODO Sending: %s", argv[1]);
+	ret = base64_decode(data_buffer, sizeof(data_buffer), &decode_len, argv[1],
+			    strlen(argv[1]));
+	if (ret != 0) {
+		goto err;
+	}
+
+	ret = lcz_mqtt_send_string((const uint8_t *)data_buffer, topic, &mqtt_ctx.agent);
 
 err:
 	if (ret != 0) {
@@ -104,7 +118,7 @@ err:
 
 static void mqtt_ack_callback(int status)
 {
-	LOG_INF("MQTT ACK: %d", status);
+	shell_print(shell_cur, "Send ACK: %d", status);
 }
 
 static void mqtt_connect_callback(int status)
@@ -137,7 +151,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 	mqtt_cmds,
     SHELL_CMD_ARG(connect, NULL, "Connect to MQTT broker", cmd_mqtt_connect, 1, 0),
 	SHELL_CMD_ARG(disconnect, NULL, "Disconnect from MQTT broker", cmd_mqtt_disconnect, 1, 0),
-	SHELL_CMD_ARG(send, NULL, "Send data to MQTT broker", cmd_mqtt_send, 2, 0),
+	SHELL_CMD_ARG(send, NULL, "Send a Base64 encoded string to the MQTT broker", cmd_mqtt_send, 2, 0),
 	SHELL_SUBCMD_SET_END /* Array terminated. */
 );
 /* clang-format on */

@@ -1,0 +1,15 @@
+---
+info:
+  title: lcz_mqtt_shell_attributes
+attributes:
+  - name: mqtt_shell_topic
+    summary: Topic for publishing/receiving data from the shell
+    required: true
+    schema:
+      maxLength: 255
+      type: string
+    x-ctype: string
+    x-default: ""
+    x-savable: true
+    x-writable: true
+    x-readable: true
