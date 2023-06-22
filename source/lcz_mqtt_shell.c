@@ -29,6 +29,7 @@ struct mqtt_shell_context {
 	struct lcz_mqtt_user agent;
 	bool credentials_loaded;
 	bool connected;
+	bool subscribed;
 };
 
 /**************************************************************************************************/
@@ -48,10 +49,30 @@ static void mqtt_ack_callback(int status);
 static void mqtt_connect_callback(int status);
 static void mqtt_disconnect_callback(int status);
 static int mqtt_shell_init(const struct device *device);
+static int mqtt_shell_subscribe(void);
 
 /**************************************************************************************************/
 /* Local Function Definitions                                                                     */
 /**************************************************************************************************/
+static int mqtt_shell_subscribe(void)
+{
+	int ret = 0;
+
+#if defined(CONFIG_LCZ_MQTT_SUBSCRIPTIONS)
+	if (!mqtt_ctx.subscribed) {
+		ret = lcz_mqtt_subscribe(
+			(const uint8_t *)attr_get_quasi_static(ATTR_ID_mqtt_shell_subscribe_topic),
+			true);
+		if (ret != 0) {
+			goto err;
+		}
+		mqtt_ctx.subscribed = true;
+	}
+#endif
+err:
+	return ret;
+}
+
 static int cmd_mqtt_connect(const struct shell *shell, size_t argc, char **argv)
 {
 	int ret;
@@ -74,6 +95,11 @@ static int cmd_mqtt_connect(const struct shell *shell, size_t argc, char **argv)
 		goto err;
 	}
 	ret = lcz_mqtt_connect();
+	if (ret != 0) {
+		goto err;
+	}
+
+	ret = mqtt_shell_subscribe();
 err:
 	if (ret != 0) {
 		shell_error(shell, ERR_MSG, ret);
@@ -95,7 +121,7 @@ static int cmd_mqtt_send(const struct shell *shell, size_t argc, char **argv)
 
 	shell_cur = shell;
 
-	topic = attr_get_quasi_static(ATTR_ID_mqtt_shell_topic);
+	topic = attr_get_quasi_static(ATTR_ID_mqtt_shell_publish_topic);
 	if (!topic || strlen(topic) <= 0) {
 		ret = -EINVAL;
 		goto err;
@@ -106,8 +132,14 @@ static int cmd_mqtt_send(const struct shell *shell, size_t argc, char **argv)
 	if (ret != 0) {
 		goto err;
 	}
+	data_buffer[decode_len] = '\0';
 
 	ret = lcz_mqtt_send_string((const uint8_t *)data_buffer, topic, &mqtt_ctx.agent);
+	if (ret != 0) {
+		goto err;
+	}
+
+	ret = mqtt_shell_subscribe();
 
 err:
 	if (ret != 0) {
@@ -131,6 +163,7 @@ static void mqtt_disconnect_callback(int status)
 {
 	shell_print(shell_cur, "Disconnected: %d", status);
 	mqtt_ctx.connected = false;
+	mqtt_ctx.subscribed = false;
 }
 
 static int mqtt_shell_init(const struct device *device)
@@ -146,6 +179,21 @@ static int mqtt_shell_init(const struct device *device)
 /**************************************************************************************************/
 /* Global Function Definitions                                                                    */
 /**************************************************************************************************/
+void lcz_mqtt_subscription_callback(const uint8_t *topic, const uint8_t *data)
+{
+	int ret;
+	size_t encode_len;
+
+	ret = base64_encode(data_buffer, sizeof(data_buffer), &encode_len, data, strlen(data));
+	if (ret != 0) {
+		shell_error(shell_cur, "mqtt receive error: %d", ret);
+		return;
+	}
+	data_buffer[encode_len] = '\0';
+
+	shell_print(shell_cur, "mqtt received: %s", data_buffer);
+}
+
 /* clang-format off */
 SHELL_STATIC_SUBCMD_SET_CREATE(
 	mqtt_cmds,
