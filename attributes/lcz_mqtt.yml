@@ -32,6 +32,7 @@ attributes:
     x-ctype: string
     x-default: ""
     x-example: "a3tq8tk8zeye6t-ats.iot.us-east-1.amazonaws.com"
+    x-readable: true
     x-savable: true
     x-writable: true
   - name: mqtt_port
